@@ -4,11 +4,10 @@ lenght = len(sys.argv)
 if lenght == 1:
     print('Usage: python3 whois.py <number>')
     sys.exit()
-elif lenght > 2:
-    print('AssertionError: more than one argument is provided',
-          file=sys.stderr)
-    sys.exit()
+
 try:
+    if lenght > 2:
+        raise IndexError()
     number = int(sys.argv[1])
     if number != 0 and number % 2 == 0:
         print("I'm Even.")
@@ -18,3 +17,5 @@ try:
         print("I'm Zero.")
 except ValueError:
     print('AssertionError: argument is not an integer', file=sys.stderr)
+except IndexError:
+    print('AssertionError: more than one argument is provided')

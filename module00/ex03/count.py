@@ -1,4 +1,5 @@
 import sys
+import string
 
 
 def text_analyzer(*r_string):
@@ -34,7 +35,7 @@ def text_analyzer(*r_string):
                     nbUpper += 1
                 elif c.isspace():
                     nbSpace += 1
-                elif c in '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~':
+                elif c in string.punctuation:
                     nbPoint += 1
         print(f"The text contains {printable} printable character(s):")
         print(f"- {nbUpper} upper letter(s)")
