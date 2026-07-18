@@ -6,8 +6,7 @@ class NonMatchedShaped(Exception):
 
 
 class Vector:
-    def __init__(self, values: list[list[float]] | int | tuple[int,
-                                                               int]) -> None:
+    def __init__(self, values):
         if type(values) is int:
             self.values = [[float(i)] for i in range(values)]
             self.shape = (1, values)
@@ -25,6 +24,7 @@ class Vector:
             raise ValueError('Invalid input.')
 
     def __add__(self, vector):
+        print("add")
         if self.shape != vector.shape:
             raise NonMatchedShaped('shape doesn\'t matche.')
         if self.shape[0] == 1:
@@ -37,6 +37,7 @@ class Vector:
                            for i in range(self.shape[0])])
 
     def __radd__(self, vector):
+        print("r_add")
         return self.__add__(vector)
 
     def __sub__(self, vector):
@@ -53,18 +54,23 @@ class Vector:
         if self.shape[0] == 1:
             return Vector([[self.values[0][i] / scalar
                             for i in range(self.shape[1])]])
+        if type(scalar) is not float:
+            raise NotImplementedError('division is only possible with scalar')
         else:
             return Vector([[self.values[i][0] / scalar]
                            for i in range(self.shape[0])])
 
     def __rtruediv__(self, scalar: float):
-        raise NotImplementedError('Division of a scalar by a Vector is not \
-                                  defined here.')
+        raise NotImplementedError('Division of a scalar by a Vector is not '
+                                  'defined here.')
 
     def __mul__(self, scalar: float):
         if self.shape[0] == 1:
             return Vector([[self.values[0][i] * scalar
                             for i in range(self.shape[1])]])
+        if type(scalar) is not float and type(scalar) is not int:
+            raise NotImplementedError('multiplication is only possible with '
+                                      'scalar.')
         else:
             return Vector([[self.values[i][0] * scalar]
                            for i in range(self.shape[0])])
@@ -76,12 +82,11 @@ class Vector:
         return f'{self.values}'
 
     def __repr__(self) -> str:
-        print(f'{self.values}')
         return f'{self.values}'
 
     def dot(self, vector) -> float:
         if self.shape != vector.shape:
-            raise NonMatchedShaped('shape doesn\'t matche.')
+            raise NonMatchedShaped('shapes doesn\'t match.')
         if self.shape[0] == 1:
             return sum([self.values[0][i] * vector.values[0][i]
                         for i in range(self.shape[1])])
@@ -95,4 +100,4 @@ class Vector:
                                   for i in range(self.shape[1])])
         else:
             return Vector(values=[[self.values[i][0]
-                                   for i in range(self.shape[1])]])
+                                   for i in range(self.shape[0])]])

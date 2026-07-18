@@ -23,7 +23,7 @@ class Recipe(BaseModel):
         description="information about recipe",
         default=''
     )
-    recipe_type: Literal["lunch", "lunch", "dessert"] = Field(
+    recipe_type: Literal["starter", "lunch", "dessert"] = Field(
         min_items=1,
         description="type of the recipe",
         example="lunch",

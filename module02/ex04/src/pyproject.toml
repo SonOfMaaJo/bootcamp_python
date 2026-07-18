@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "my_minipack"
+version = "1.0.0"
+authors = [
+	{ name="vnaoussi", email="naoussiviery237@gmail.com"},
+]
+description = "A small example package"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+	"Development Status :: 3 - Alpha",
+	"Intended Audience :: Developers",
+	"Intended Audience :: Students",
+	"Topic :: Education",
+	"Topic :: HowTo",
+	"Topic :: Package",
+	"License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+	"Programming Language :: Python :: 3",
+	"Programming Language :: Python :: 3 :: Only",
+	"Operating System :: OS Independent",
+]
+license = { file = "LICENSE.md" }

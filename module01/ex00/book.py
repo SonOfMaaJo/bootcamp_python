@@ -13,7 +13,11 @@ class Book(BaseModel):
     creation_date: PastDatetime = Field(
         description="the creation date of the book"
     )
-    recipes_list: dict[str, list[Recipe]]
+    recipes_list: dict[str, list[Recipe]] = {
+        "starter": [],
+        "lunch": [],
+        "dessert": [],
+    }
 
     def get_recipe_by_name(self, name: str) -> Recipe | None:
         """Prints a recipe with the name \texttt{name}
