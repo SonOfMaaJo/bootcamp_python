@@ -22,7 +22,7 @@ class KmeansClustering:
         self.centroids = []
         self.predictions = None
 
-    def fit(self, datas, dist_name='L1', cent='r'):
+    def fit(self, datas, dist_name='L2', cent='r'):
         """
         Run the K-means clustering algorithm.
         For the location of the initial centroids, ramdomly pick n centroids
@@ -37,23 +37,15 @@ class KmeansClustering:
         _____
             This function should not raise any Exception.
         """
+        distance = distance_func(dist_name)
         if cent == 'r':
-            centroids = [None for _ in range(self.ncentroid)]
-            nb = 0
-            while nb != self.ncentroid:
-                choice = np.random.choice(datas.shape[0])
-                centroid = datas[choice, :]
-                if any(data[0] == centroid[0] and data[1] == centroid[1] and
-                       data[2] == centroid[2] for data in centroids
-                       if data is not None) is None:
-                    centroids.append(centroid)
-                    nb += 1
-            self.centroids = centroids
+            centroids_idx = np.random.choice(datas.shape[0], self.ncentroid,
+                                             replace=False)
+            self.centroids = datas[centroids_idx]
         elif cent == 'rpp':
             choice = np.random.choice(datas.shape[0])
             self.centroids.append(datas[choice, :])
             for _ in range(self.ncentroid - 1):
-                distance = distance_func(dist_name)
                 distances_s = [[distance(datas[x, -3:], centroid[-3:])**2 for
                                 centroid in self.centroids]
                                for x in range(datas.shape[0])]
@@ -118,7 +110,7 @@ if __name__ == '__main__':
             datas = np.array(datas)
             header = file.getheader()[-3:]
             kmeans = KmeansClustering(max_iter=max_iter, ncentroid=ncentroid)
-            kmeans.fit(datas, cent='rpp')
+            kmeans.fit(datas, cent='r')
             homelands = {
                 'Venus': [0, 'gold'],
                 'Earth': [0, 'royalblue'],
