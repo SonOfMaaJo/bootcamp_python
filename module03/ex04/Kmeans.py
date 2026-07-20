@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from math import sqrt
 from modules import CsvReader
 import sys
@@ -8,6 +9,9 @@ def distance_func(name):
     if name == 'L2':
         return lambda x, y: sqrt((x[0] - y[0])**2 + (x[1] - y[1])**2 +
                                  (x[2] - y[2])**2)
+    if name == 'L1':
+        return lambda x, y: abs(x[0] - y[0]) + abs(x[1] - y[1]) + abs(
+            x[2] - y[2])
     return None
 
 
@@ -16,10 +20,9 @@ class KmeansClustering:
         self.ncentroid = ncentroid
         self.max_iter = max_iter
         self.centroids = []
-        self.clusters = []
         self.predictions = None
 
-    def fit(self, datas):
+    def fit(self, datas, dist_name='L1', cent='r'):
         """
         Run the K-means clustering algorithm.
         For the location of the initial centroids, ramdomly pick n centroids
@@ -34,21 +37,34 @@ class KmeansClustering:
         _____
             This function should not raise any Exception.
         """
-        choice = np.random.choice(datas.shape[0])
-        self.centroids.append(datas[choice, :])
-        for _ in range(self.ncentroid - 1):
-            distance = distance_func('L2')
-            distances_s = [[distance(datas[x, -3:], centroid[-3:])**2 for
-                            centroid in self.centroids]
-                           for x in range(datas.shape[0])]
-            distances_s = np.array(distances_s)
-            weights = np.max(distances_s, axis=1)
-            weights = weights / np.sum(weights)
-            choice = np.random.choice(datas.shape[0], p=weights)
+        if cent == 'r':
+            centroids = [None for _ in range(self.ncentroid)]
+            nb = 0
+            while nb != self.ncentroid:
+                choice = np.random.choice(datas.shape[0])
+                centroid = datas[choice, :]
+                if any(data[0] == centroid[0] and data[1] == centroid[1] and
+                       data[2] == centroid[2] for data in centroids
+                       if data is not None) is None:
+                    centroids.append(centroid)
+                    nb += 1
+            self.centroids = centroids
+        elif cent == 'rpp':
+            choice = np.random.choice(datas.shape[0])
             self.centroids.append(datas[choice, :])
-        self.predictions = self.predict(datas)
+            for _ in range(self.ncentroid - 1):
+                distance = distance_func(dist_name)
+                distances_s = [[distance(datas[x, -3:], centroid[-3:])**2 for
+                                centroid in self.centroids]
+                               for x in range(datas.shape[0])]
+                distances_s = np.array(distances_s)
+                weights = np.max(distances_s, axis=1)
+                weights = np.mean(weights, axis=0)
+                choice = np.random.choice(datas.shape[0], p=weights)
+                self.centroids.append(datas[choice, :])
+        self.predictions = self.predict(datas, distance)
 
-    def predict(self, datas):
+    def predict(self, datas, distance):
         """
         Predict from which cluster each datapoint belongs to.
         Args:
@@ -70,17 +86,15 @@ class KmeansClustering:
             predicts = []
             for j in range(nb_data):
                 point = datas[j, :]
-                distance = distance_func('L2')
                 distances = [distance(point[-3:], x[-3:])
                              for x in self.centroids]
                 closest_index = distances.index(min(distances))
                 clusters[closest_index].append(point)
                 predicts.append(closest_index)
-            self.clusters = clusters
             newcentroids = []
             for j in range(self.ncentroid):
                 cluster = np.array(clusters[j])
-                centroid = np.sum(cluster, axis=0) / cluster.shape[0]
+                centroid = np.mean(cluster, axis=0)
                 newcentroids.append(centroid)
             self.centroids = newcentroids
             i += 1
@@ -99,48 +113,73 @@ if __name__ == '__main__':
         with CsvReader(filename=filepath, header=True, skip_top=1,
                        skip_bottom=0) as file:
             datas = file.getdata()
-            datas = [[float(data[i]) if i > 0 else int(data[i])
-                      for i in range(len(data))] for data in datas]
+            datas = [[float(data[i]) for i in range(len(data)) if i > 0]
+                     for data in datas]
             datas = np.array(datas)
             header = file.getheader()[-3:]
             kmeans = KmeansClustering(max_iter=max_iter, ncentroid=ncentroid)
-            kmeans.fit(datas)
+            kmeans.fit(datas, cent='rpp')
             homelands = {
                 'Venus': [0, 'gold'],
                 'Earth': [0, 'royalblue'],
                 'Mars': [0, 'orangered'],
                 'Asteroids': [0, 'teal'],
             }
-            classement = sorted(kmeans.centroids, key=lambda x: x[1])
-            homelands['Asteroids'][0] = classement[-1]
+            classement = [(i, cent) for i, cent in enumerate(kmeans.centroids)]
+            classement = sorted(classement, key=lambda x: x[1][0])
+            homelands['Asteroids'][0] = classement[-1][0]
             classement = classement[:-1]
-            classement = sorted(classement, key=lambda x: x[2])
+            classement = sorted(classement, key=lambda x: x[1][1])
             venus = classement[0]
             classement = classement[1:]
             b_classement = classement
-            classement = sorted(classement, key=lambda x: x[1])
-            if classement[1][3] < venus[3]:
-                homelands['Mars'][0] = classement[1]
-                homelands['Earth'][0] = classement[0]
-                homelands['Venus'][0] = venus
+            classement = sorted(classement, key=lambda x: x[1][0])
+            if classement[1][1][2] < venus[1][2]:
+                homelands['Mars'][0] = classement[1][0]
+                homelands['Earth'][0] = classement[0][0]
+                homelands['Venus'][0] = venus[0]
             else:
-                homelands['Mars'][0] = venus
-                homelands['Venus'][0] = b_classement[0]
-                homelands['Earth'][0] = b_classement[1]
+                homelands['Mars'][0] = venus[0]
+                homelands['Venus'][0] = b_classement[0][0]
+                homelands['Earth'][0] = b_classement[1][0]
             for homeland, centroid in homelands.items():
-                for i in range(kmeans.ncentroid):
-                    cent = kmeans.centroids[i]
-                    if (cent[1] == centroid[0][1] and cent[2]
-                            == centroid[0][2]) \
-                            and cent[3] == centroid[0][3]:
-                        index = i
-                        break
                 print(f'Details of centroids from {homeland}:\n',
-                      f'{header[0]} = {centroid[0][1]}\n',
-                      f'{header[1]} = {centroid[0][2]}\n',
-                      f'{header[2]} = {centroid[0][3]}\n',
+                      f'{header[0]} = {kmeans.centroids[centroid[0]][0]}\n',
+                      f'{header[1]} = {kmeans.centroids[centroid[0]][1]}\n',
+                      f'{header[2]} = {kmeans.centroids[centroid[0]][2]}\n',
                       'numbers of individuals',
-                      f' = {len(kmeans.clusters[i])}',
+                      f' = {kmeans.predictions[kmeans.predictions
+                                               == centroid[0]].shape[0]}',
                       '\n\n')
+            fig = plt.figure(figsize=(8, 6))
+            ax = fig.add_subplot(111, projection="3d")
+            for homeland, tpl in homelands.items():
+                points = datas[kmeans.predictions[:, 0] == tpl[0]]
+                centroid = kmeans.centroids[tpl[0]]
+                ax.scatter(
+                    points[:, 0],
+                    points[:, 1],
+                    points[:, 2],
+                    color=tpl[1],
+                    s=20,
+                    alpha=0.7,
+                    label=homeland
+                )
+                ax.scatter(
+                    centroid[0],
+                    centroid[1],
+                    centroid[2],
+                    color=tpl[1],
+                    marker="x",
+                    s=250,
+                    linewidths=3,
+                )
+            ax.set_xlabel(header[0])
+            ax.set_ylabel(header[1])
+            ax.set_zlabel(header[2])
+            ax.set_title("solar system census")
+            ax.legend()
+            plt.show()
+
     except Exception as e:
-        print(f'Exception: {type(e).__name__} -- {e}')
+        print(f'Exception: {type(e).__name__}: -- {e}')
